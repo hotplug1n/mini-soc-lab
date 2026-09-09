@@ -1,160 +1,256 @@
 # 🛡️ Mini SOC Lab
 
-> Defensive security laboratory built with Python to simulate a small SOC workflow: **telemetry generation → collection → detection → triage → investigation**.
+> Laboratório defensivo de cibersegurança desenvolvido em Python para simular um pequeno fluxo de SOC: **geração de telemetria → coleta → detecção → triagem → investigação**.
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Security](https://img.shields.io/badge/Security-Blue%20Team-0A66C2?style=for-the-badge&logo=shield&logoColor=white)](https://github.com/hotplug1n)
 [![Flask](https://img.shields.io/badge/Flask-Web%20Dashboard-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 
-## 🎯 Objective
+## 📌 Sobre o projeto
 
-Mini SOC Lab is a local defensive-security environment that turns synthetic authentication telemetry into structured detections and a live SOC-style dashboard.
+O **Mini SOC Lab** é um ambiente local de segurança defensiva que transforma telemetria sintética de autenticação em eventos normalizados, detecções estruturadas e uma interface web inspirada em um SOC corporativo.
 
-The goal is to demonstrate practical concepts used in a junior Blue Team / SOC workflow without requiring a production SIEM.
+A proposta é demonstrar, de forma prática, conceitos de **Blue Team, SOC e engenharia de detecção**, sem depender de uma infraestrutura real de SIEM.
 
-## ⚙️ How it works
+> **Importante:** todos os eventos usados pelo projeto são sintéticos e gerados exclusivamente para fins de laboratório.
+
+## 🎯 Objetivos
+
+- simular um fluxo básico de monitoramento de segurança;
+- gerar eventos de autenticação variados e não estáticos;
+- identificar padrões suspeitos por meio de regras de detecção;
+- apresentar alertas em uma interface semelhante a um console de SOC;
+- praticar análise, triagem e investigação de eventos;
+- manter uma base simples para futuras integrações com SIEM e outras fontes de telemetria.
+
+## 🧩 Arquitetura
 
 ```text
-Synthetic telemetry
-       ↓
-  event simulator
-       ↓
- normalized events
-       ↓
- detection engine
-       ↓
- AUTH-001 / 002 / 003
-       ↓
- live dashboard + triage
+┌──────────────────────────┐
+│ Telemetria sintética     │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Simulador de eventos     │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Eventos normalizados     │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Motor de detecção        │
+│ AUTH-001 / 002 / 003     │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ API Flask                │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Dashboard Web do SOC     │
+└──────────────────────────┘
 ```
 
-The simulator continuously produces varied authentication activity: normal logins, failures, privileged-account targeting, bursts of repeated failures and occasional successful logins after failed attempts.
+## 🚨 Regras de detecção
 
-All telemetry is synthetic. The dashboard explicitly represents a lab simulation, not a real corporate environment.
-
-## 🚨 Detection scenarios
-
-| Rule | Severity | Scenario |
+| Regra | Severidade | Detecção |
 |---|---|---|
-| `AUTH-001` | HIGH | Repeated authentication failures from the same source against the same account |
-| `AUTH-002` | CRITICAL | Successful authentication after a sequence of recent failures |
-| `AUTH-003` | HIGH | Failed authentication targeting an administrative account |
+| `AUTH-001` | HIGH | Cinco ou mais falhas de autenticação para a mesma origem e conta em até cinco minutos |
+| `AUTH-002` | CRITICAL | Login bem-sucedido após uma sequência recente de falhas |
+| `AUTH-003` | HIGH | Tentativas de autenticação malsucedidas contra contas administrativas |
 
-## 🖥️ SOC dashboard
+Essas regras são propositalmente simples para facilitar o entendimento do processo de **detection engineering**. Em um ambiente real, seria necessário ajustar os limiares e adicionar contexto para reduzir falsos positivos.
 
-The web interface is designed as a clean enterprise-style monitoring console with:
+## 🖥️ Dashboard do SOC
 
-- live synthetic event stream;
-- rolling event-activity timeline;
-- alert counters by severity;
-- detection-rule activity;
-- recent alerts with source, account, rule and timestamp;
-- top source activity;
-- normalized authentication event table;
-- search and severity filters;
-- simulation reset control.
+A interface web foi criada para representar uma console de monitoramento corporativa limpa e objetiva.
 
-The dashboard polls the local API every 3.5 seconds, so event counts and detections change without reloading the page.
+Ela apresenta:
 
-## 🧠 Security concepts demonstrated
+- fluxo contínuo de eventos sintéticos;
+- atividade de eventos em uma janela temporal;
+- quantidade de eventos e detecções abertas;
+- alertas críticos e falhas de autenticação;
+- atividade por regra de detecção;
+- fontes com maior volume de eventos;
+- tabela de alertas recentes;
+- tabela de eventos de autenticação normalizados;
+- atualização automática sem recarregar a página;
+- botão para reiniciar a simulação.
 
-- Log parsing
-- Event normalization
-- Time-window correlation
-- Detection engineering
-- Alert severity
-- Basic incident triage
-- Python automation
-- Synthetic telemetry generation
-- Web dashboard design
-- Unit testing
-- Defensive security methodology
+A interface consulta a API local a cada **3,5 segundos**, fazendo com que os indicadores e alertas mudem continuamente durante a execução.
 
-## 📂 Project structure
+## 🔄 Simulação de telemetria
+
+O simulador gera uma combinação variável de:
+
+- autenticações bem-sucedidas;
+- falhas de autenticação;
+- tentativas contra contas administrativas;
+- rajadas de falhas repetidas;
+- sequências de falhas seguidas por sucesso;
+- múltiplas origens e contas.
+
+A finalidade é evitar uma interface estática e aproximar o comportamento de um fluxo de eventos observado em um laboratório de SOC.
+
+## 🧠 Conceitos praticados
+
+- análise e parsing de logs;
+- normalização de eventos;
+- correlação baseada em janela de tempo;
+- engenharia de detecção;
+- classificação de severidade;
+- triagem de alertas;
+- investigação inicial de incidentes;
+- automação com Python;
+- geração de telemetria sintética;
+- desenvolvimento de dashboard com Flask;
+- testes unitários;
+- metodologia defensiva de segurança.
+
+## 📂 Estrutura do projeto
 
 ```text
 mini-soc-lab/
-├── README.md
-├── app.py
-├── detector.py
-├── simulator.py
-├── requirements.txt
+├── README.md                  # documentação principal
+├── app.py                     # aplicação Flask e API local
+├── detector.py                # motor de detecção
+├── simulator.py               # geração de telemetria sintética
+├── requirements.txt           # dependências Python
+│
 ├── data/
-│   └── auth.log
-├── templates/
+│   └── auth.log               # amostra de log sintético
+│
+├── templates/                 # páginas HTML/Jinja
 │   ├── base.html
 │   ├── dashboard.html
 │   ├── alerts.html
 │   └── events.html
-├── static/
+│
+├── static/                    # recursos do dashboard
 │   ├── css/
 │   │   └── style.css
 │   └── js/
 │       └── app.js
-├── tests/
+│
+├── tests/                     # testes automatizados
 │   └── test_detector.py
-└── docs/
+│
+└── docs/                      # documentação técnica
     ├── architecture.md
     ├── detection-rules.md
     └── investigation.md
 ```
 
-## ▶️ Run the dashboard
+A separação entre **código**, **interface**, **testes**, **dados sintéticos** e **documentação** mantém o projeto fácil de navegar e de evoluir.
 
-Requires Python 3.10+.
+## ⚙️ Requisitos
+
+- Python **3.10+**
+- `pip`
+
+Não é necessário banco de dados ou serviço externo para executar o laboratório.
+
+## ▶️ Executando o projeto
+
+Clone o repositório e entre na pasta:
+
+```bash
+git clone https://github.com/hotplug1n/mini-soc-lab.git
+cd mini-soc-lab
+```
+
+Instale as dependências:
 
 ```bash
 python3 -m pip install -r requirements.txt
+```
+
+Inicie o dashboard:
+
+```bash
 python3 app.py
 ```
 
-Then open:
+Acesse no navegador:
 
 ```text
 http://127.0.0.1:5000
 ```
 
-### CLI detector
+## 🧪 Detector via terminal
 
-The original detector remains available for direct log analysis:
+O motor de detecção também pode ser executado diretamente sobre o log sintético:
 
 ```bash
 python3 detector.py data/auth.log
 ```
 
-### Tests
+## ✅ Testes
+
+Execute a suíte automatizada com:
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
 
-## 🔍 Investigation workflow
+## 🔎 Fluxo de investigação
 
-When an alert appears, an analyst can validate the source address, affected account, failure count, timing, successful follow-on authentication and privileged-account targeting before deciding on containment or escalation.
+Quando uma detecção aparece, o analista pode seguir uma primeira triagem:
 
-The live simulator is intentionally probabilistic, so each run can produce a different mix of benign activity and suspicious patterns.
+```text
+Alerta
+  ↓
+Validar origem e conta
+  ↓
+Verificar janela temporal
+  ↓
+Correlacionar eventos próximos
+  ↓
+Avaliar sucesso após falhas
+  ↓
+Verificar se a conta é privilegiada
+  ↓
+Classificar o incidente
+  ↓
+Escalar ou encerrar com evidências
+```
 
-## 📊 Future improvements
+O playbook completo está em [`docs/investigation.md`](docs/investigation.md).
 
-- Windows Event Log / Sysmon support
-- JSON alert export
-- Sigma-compatible detection rules
-- Splunk SPL examples
-- IOC enrichment
-- Configurable thresholds
-- MITRE ATT&CK mapping
-- CI test workflow
-- Alert acknowledgement and case tracking
-- Multiple telemetry sources (VPN, web, endpoint, DNS)
+## 📚 Documentação
 
-## 🔐 Scope and ethics
+- [`docs/architecture.md`](docs/architecture.md) — arquitetura e fluxo de dados;
+- [`docs/detection-rules.md`](docs/detection-rules.md) — regras e lógica das detecções;
+- [`docs/investigation.md`](docs/investigation.md) — fluxo de triagem e investigação.
 
-This repository is a **defensive laboratory project**. Use it only with data you own or environments where you have explicit authorization.
+## 🛣️ Próximos passos
 
-No real credentials, secrets or production telemetry should be committed to this repository.
+- suporte a Windows Event Log e Sysmon;
+- exportação de alertas em JSON;
+- regras compatíveis com Sigma;
+- exemplos de SPL para Splunk;
+- enriquecimento de IOCs;
+- thresholds configuráveis;
+- mapeamento MITRE ATT&CK;
+- pipeline de testes em CI;
+- reconhecimento e acompanhamento de casos;
+- novas fontes de telemetria, como VPN, endpoint, web e DNS.
 
-## 👤 Author
+## 🔐 Escopo e ética
 
-**hotplug1n** — cybersecurity student focused on Blue Team, SOC, networking, Linux and secure software development.
+Este projeto é um **laboratório defensivo**. Utilize-o somente com dados próprios ou em ambientes para os quais você tenha autorização explícita.
+
+Não adicione credenciais, segredos ou telemetria real ao repositório.
+
+## 👤 Autor
+
+**hotplug1n** — estudante de cibersegurança com foco em **Blue Team, SOC, redes, Linux e desenvolvimento seguro**.
 
 [GitHub](https://github.com/hotplug1n) · [Studies](https://github.com/hotplug1n/studies) · [TryHackMe](https://tryhackme.com/p/.hotplug1n)
