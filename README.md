@@ -1,6 +1,6 @@
 # 🛡️ Mini SOC Lab
 
-> Defensive security laboratory built with Python to simulate a small SOC workflow: **log collection → detection → triage → investigation → response recommendations**.
+> Defensive security laboratory built with Python to simulate a small SOC workflow: **telemetry generation → collection → detection → triage → investigation**.
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Security](https://img.shields.io/badge/Security-Blue%20Team-0A66C2?style=for-the-badge&logo=shield&logoColor=white)](https://github.com/hotplug1n)
@@ -8,17 +8,53 @@
 
 ## 🎯 Objective
 
-This project demonstrates how a junior security analyst can turn authentication logs into actionable alerts and inspect them through a lightweight SOC-style web dashboard.
+Mini SOC Lab is a local defensive-security environment that turns synthetic authentication telemetry into structured detections and a live SOC-style dashboard.
 
-The lab focuses on reproducible detection logic rather than offensive exploitation.
+The goal is to demonstrate practical concepts used in a junior Blue Team / SOC workflow without requiring a production SIEM.
 
-### Detection scenarios
+## ⚙️ How it works
+
+```text
+Synthetic telemetry
+       ↓
+  event simulator
+       ↓
+ normalized events
+       ↓
+ detection engine
+       ↓
+ AUTH-001 / 002 / 003
+       ↓
+ live dashboard + triage
+```
+
+The simulator continuously produces varied authentication activity: normal logins, failures, privileged-account targeting, bursts of repeated failures and occasional successful logins after failed attempts.
+
+All telemetry is synthetic. The dashboard explicitly represents a lab simulation, not a real corporate environment.
+
+## 🚨 Detection scenarios
 
 | Rule | Severity | Scenario |
 |---|---|---|
 | `AUTH-001` | HIGH | Repeated authentication failures from the same source against the same account |
 | `AUTH-002` | CRITICAL | Successful authentication after a sequence of recent failures |
 | `AUTH-003` | HIGH | Failed authentication targeting an administrative account |
+
+## 🖥️ SOC dashboard
+
+The web interface is designed as a clean enterprise-style monitoring console with:
+
+- live synthetic event stream;
+- rolling event-activity timeline;
+- alert counters by severity;
+- detection-rule activity;
+- recent alerts with source, account, rule and timestamp;
+- top source activity;
+- normalized authentication event table;
+- search and severity filters;
+- simulation reset control.
+
+The dashboard polls the local API every 3.5 seconds, so event counts and detections change without reloading the page.
 
 ## 🧠 Security concepts demonstrated
 
@@ -29,49 +65,10 @@ The lab focuses on reproducible detection logic rather than offensive exploitati
 - Alert severity
 - Basic incident triage
 - Python automation
+- Synthetic telemetry generation
+- Web dashboard design
 - Unit testing
-- SOC dashboard design
 - Defensive security methodology
-
-## 🖥️ Web dashboard
-
-The project includes a local Flask interface with:
-
-- Security overview and metrics
-- Critical / High / Medium / Low alert counts
-- Latest detections
-- Alert filtering by severity
-- Event search by IP, user or action
-- Detection-engine status indicator
-- Source activity overview
-
-## 🏗️ Architecture
-
-```text
-                    ┌──────────────────┐
-                    │   auth.log       │
-                    │  lab telemetry   │
-                    └────────┬─────────┘
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │   Log Parser     │
-                    │     Python       │
-                    └────────┬─────────┘
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │ Detection Engine │
-                    │  AUTH-001..003   │
-                    └────────┬─────────┘
-                             │
-                  ┌──────────┴──────────┐
-                  ▼                     ▼
-         ┌─────────────────┐   ┌─────────────────┐
-         │ CLI report      │   │ Flask dashboard │
-         │ terminal output │   │ alerts / events│
-         └─────────────────┘   └─────────────────┘
-```
 
 ## 📂 Project structure
 
@@ -80,6 +77,7 @@ mini-soc-lab/
 ├── README.md
 ├── app.py
 ├── detector.py
+├── simulator.py
 ├── requirements.txt
 ├── data/
 │   └── auth.log
@@ -89,8 +87,10 @@ mini-soc-lab/
 │   ├── alerts.html
 │   └── events.html
 ├── static/
-│   └── css/
-│       └── style.css
+│   ├── css/
+│   │   └── style.css
+│   └── js/
+│       └── app.js
 ├── tests/
 │   └── test_detector.py
 └── docs/
@@ -99,25 +99,12 @@ mini-soc-lab/
     └── investigation.md
 ```
 
-## ▶️ Run the detector
+## ▶️ Run the dashboard
 
 Requires Python 3.10+.
 
 ```bash
-python3 detector.py data/auth.log
-```
-
-## 🖥️ Run the dashboard
-
-Install the single web dependency:
-
-```bash
 python3 -m pip install -r requirements.txt
-```
-
-Start the local server:
-
-```bash
 python3 app.py
 ```
 
@@ -127,9 +114,15 @@ Then open:
 http://127.0.0.1:5000
 ```
 
-The dashboard reads the synthetic `data/auth.log` file and runs the same detection engine used by the CLI.
+### CLI detector
 
-## 🧪 Run tests
+The original detector remains available for direct log analysis:
+
+```bash
+python3 detector.py data/auth.log
+```
+
+### Tests
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -137,16 +130,9 @@ python3 -m unittest discover -s tests -v
 
 ## 🔍 Investigation workflow
 
-When an alert is generated, the analyst should validate:
+When an alert appears, an analyst can validate the source address, affected account, failure count, timing, successful follow-on authentication and privileged-account targeting before deciding on containment or escalation.
 
-1. Source address and affected account.
-2. Number and timing of failed attempts.
-3. Whether a successful login followed the failures.
-4. Whether the targeted account has administrative privileges.
-5. Related events in the surrounding time window.
-6. Appropriate containment, credential-reset, monitoring and escalation actions.
-
-The repository contains synthetic lab telemetry only. Addresses in the sample data use documentation ranges.
+The live simulator is intentionally probabilistic, so each run can produce a different mix of benign activity and suspicious patterns.
 
 ## 📊 Future improvements
 
@@ -158,12 +144,14 @@ The repository contains synthetic lab telemetry only. Addresses in the sample da
 - Configurable thresholds
 - MITRE ATT&CK mapping
 - CI test workflow
+- Alert acknowledgement and case tracking
+- Multiple telemetry sources (VPN, web, endpoint, DNS)
 
 ## 🔐 Scope and ethics
 
 This repository is a **defensive laboratory project**. Use it only with data you own or environments where you have explicit authorization.
 
-No real credentials, secrets, or production telemetry should be committed to this repository.
+No real credentials, secrets or production telemetry should be committed to this repository.
 
 ## 👤 Author
 
