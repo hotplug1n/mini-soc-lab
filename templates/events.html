@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block content %}
+<header class="topbar"><div><p class="eyebrow">Security Operations Center</p><h1>Events</h1><p class="muted">Raw authentication events parsed by the detector.</p></div><form class="search" method="get"><input name="q" value="{{ query }}" placeholder="Search IP, user, action..."><button>Search</button></form></header>
+<section class="panel"><table><thead><tr><th>Timestamp</th><th>Source</th><th>User</th><th>Action</th></tr></thead><tbody>{% for event in events %}<tr><td class="muted">{{ event.timestamp.isoformat() }}</td><td><code>{{ event.source }}</code></td><td>{{ event.user }}</td><td><span class="action {{ event.action|lower }}">{{ event.action }}</span></td></tr>{% else %}<tr><td colspan="4" class="empty">No events match your search.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}
