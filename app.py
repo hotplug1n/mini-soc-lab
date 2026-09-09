@@ -1,102 +1,124 @@
 #!/usr/bin/env python3
-"""Mini SOC Lab web dashboard."""
+"""Mini SOC Lab web dashboard with live synthetic telemetry."""
 
 from __future__ import annotations
 
-from pathlib import Path
-from flask import Flask, render_template, request
+from collections import Counter
+from datetime import timedelta
+from threading import Lock
 
-from detector import detect, load_events
+from flask import Flask, jsonify, render_template, request
 
-BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_LOG = BASE_DIR / "data" / "auth.log"
+from detector import detect
+from simulator import TelemetrySimulator
 
 app = Flask(__name__)
+SIM = TelemetrySimulator()
+SIM.bootstrap(minutes=45, minimum_events=120)
+SIM_LOCK = Lock()
+MAX_EVENTS = 600
 
 
-def dashboard_data(log_path: Path):
-    events, malformed = load_events(log_path)
-    alerts = detect(events)
+def serialize_event(event):
+    return {
+        "timestamp": event.timestamp.isoformat(timespec="seconds"),
+        "source": event.source,
+        "user": event.user,
+        "action": event.action,
+    }
 
-    severity_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-    rule_counts = {}
-    source_counts = {}
-    user_counts = {}
-    failures = successes = 0
 
-    for event in events:
-        if event.action == "FAILURE":
-            failures += 1
-        else:
-            successes += 1
-        source_counts[event.source] = source_counts.get(event.source, 0) + 1
-        user_counts[event.user] = user_counts.get(event.user, 0) + 1
+def serialize_alert(alert):
+    return {
+        "timestamp": alert.timestamp.isoformat(timespec="seconds"),
+        "source": alert.source,
+        "user": alert.user,
+        "rule": alert.rule,
+        "severity": alert.severity,
+        "message": alert.message,
+    }
 
-    for alert in alerts:
-        severity_counts[alert.severity] = severity_counts.get(alert.severity, 0) + 1
-        rule_counts[alert.rule] = rule_counts.get(alert.rule, 0) + 1
 
-    recent = sorted(alerts, key=lambda alert: alert.timestamp, reverse=True)[:12]
-    top_sources = sorted(source_counts.items(), key=lambda item: item[1], reverse=True)[:8]
-    top_users = sorted(user_counts.items(), key=lambda item: item[1], reverse=True)[:8]
+def snapshot(advance: bool = True):
+    with SIM_LOCK:
+        if advance:
+            SIM.tick()
+        events = SIM.events[-MAX_EVENTS:]
+        alerts = detect(events)
+        simulated_now = SIM.now
+
+    severity = Counter(alert.severity for alert in alerts)
+    actions = Counter(event.action for event in events)
+    source_counts = Counter(event.source for event in events)
+    user_counts = Counter(event.user for event in events)
+
+    buckets = []
+    for offset in range(11, -1, -1):
+        minute = (simulated_now - timedelta(minutes=offset)).replace(second=0, microsecond=0)
+        end = minute + timedelta(minutes=1)
+        minute_events = [event for event in events if minute <= event.timestamp < end]
+        buckets.append({
+            "label": minute.strftime("%H:%M"),
+            "count": len(minute_events),
+            "failures": sum(event.action == "FAILURE" for event in minute_events),
+        })
 
     return {
-        "events": events,
-        "alerts": alerts,
-        "recent": recent,
-        "malformed": malformed,
+        "generated_at": simulated_now.isoformat(timespec="seconds"),
         "total_events": len(events),
-        "failures": failures,
-        "successes": successes,
-        "severity_counts": severity_counts,
-        "rule_counts": rule_counts,
-        "top_sources": top_sources,
-        "top_users": top_users,
-        "log_name": log_path.name,
+        "failures": actions["FAILURE"],
+        "successes": actions["SUCCESS"],
+        "alert_count": len(alerts),
+        "critical": severity["CRITICAL"],
+        "high": severity["HIGH"],
+        "medium": severity["MEDIUM"],
+        "low": severity["LOW"],
+        "unique_sources": len(source_counts),
+        "top_sources": source_counts.most_common(6),
+        "top_users": user_counts.most_common(6),
+        "timeline": buckets,
+        "alerts": [serialize_alert(alert) for alert in sorted(alerts, key=lambda item: item.timestamp, reverse=True)[:12]],
+        "events": [serialize_event(event) for event in sorted(events, key=lambda item: item.timestamp, reverse=True)[:18]],
     }
 
 
 @app.route("/")
 def dashboard():
-    query = request.args.get("q", "").strip().lower()
-    data = dashboard_data(DEFAULT_LOG)
+    return render_template("dashboard.html")
 
-    if query:
-        data["recent"] = [
-            alert for alert in data["alerts"]
-            if query in alert.source.lower()
-            or query in alert.user.lower()
-            or query in alert.rule.lower()
-            or query in alert.message.lower()
-        ][:12]
 
-    return render_template("dashboard.html", **data, query=query)
+@app.route("/api/snapshot")
+def api_snapshot():
+    return jsonify(snapshot(advance=True))
+
+
+@app.route("/api/reset", methods=["POST"])
+def api_reset():
+    with SIM_LOCK:
+        SIM.bootstrap(minutes=45, minimum_events=120)
+    return jsonify(snapshot(advance=False))
 
 
 @app.route("/alerts")
 def alerts_page():
-    data = dashboard_data(DEFAULT_LOG)
+    data = snapshot(advance=False)
     severity = request.args.get("severity", "ALL").upper()
-    filtered = data["alerts"]
     if severity != "ALL":
-        filtered = [alert for alert in filtered if alert.severity == severity]
-    data["alerts"] = sorted(filtered, key=lambda alert: alert.timestamp, reverse=True)
+        data["alerts"] = [item for item in data["alerts"] if item["severity"] == severity]
     return render_template("alerts.html", **data, severity=severity)
 
 
 @app.route("/events")
 def events_page():
-    data = dashboard_data(DEFAULT_LOG)
+    data = snapshot(advance=False)
     query = request.args.get("q", "").strip().lower()
-    filtered = data["events"]
     if query:
-        filtered = [
-            event for event in filtered
-            if query in event.source.lower()
-            or query in event.user.lower()
-            or query in event.action.lower()
+        data["events"] = [
+            event for event in data["events"]
+            if query in event["source"].lower()
+            or query in event["user"].lower()
+            or query in event["action"].lower()
         ]
-    data["events"] = sorted(filtered, key=lambda event: event.timestamp, reverse=True)
     return render_template("events.html", **data, query=query)
 
 
