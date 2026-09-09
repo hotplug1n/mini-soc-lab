@@ -51,10 +51,7 @@
     if (sourceList) sourceList.innerHTML = data.top_sources.map(([source, count]) => `<div class="rank"><code>${source}</code><span>${count} events</span></div>`).join('');
 
     const ruleList = el('#rule-list');
-    if (ruleList) ruleList.innerHTML = Object.entries({ 'AUTH-001': data.high, 'AUTH-002': data.critical, 'AUTH-003': data.high }).map(([rule, count]) => `<div class="rank"><strong>${rule}</strong><span>${count}</span></div>`).join('');
-
-    const severityText = el('#severity-total');
-    if (severityText) severityText.textContent = `${data.critical + data.high + data.medium + data.low} detections`;
+    if (ruleList) ruleList.innerHTML = ['AUTH-001', 'AUTH-002', 'AUTH-003'].map((rule) => `<div class="rank"><strong>${rule}</strong><span>${data.rule_counts?.[rule] || 0}</span></div>`).join('');
 
     const simClock = el('#sim-clock');
     if (simClock) simClock.textContent = fmtTime(data.generated_at);
