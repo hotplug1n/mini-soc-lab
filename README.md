@@ -4,11 +4,11 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Security](https://img.shields.io/badge/Security-Blue%20Team-0A66C2?style=for-the-badge&logo=shield&logoColor=white)](https://github.com/hotplug1n)
-[![Status](https://img.shields.io/badge/Status-Lab%20Project-2EA44F?style=for-the-badge)](https://github.com/hotplug1n/mini-soc-lab)
+[![Flask](https://img.shields.io/badge/Flask-Web%20Dashboard-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 
 ## 🎯 Objective
 
-This project demonstrates how a junior security analyst can turn authentication logs into actionable alerts without requiring an external SIEM.
+This project demonstrates how a junior security analyst can turn authentication logs into actionable alerts and inspect them through a lightweight SOC-style web dashboard.
 
 The lab focuses on reproducible detection logic rather than offensive exploitation.
 
@@ -30,7 +30,20 @@ The lab focuses on reproducible detection logic rather than offensive exploitati
 - Basic incident triage
 - Python automation
 - Unit testing
+- SOC dashboard design
 - Defensive security methodology
+
+## 🖥️ Web dashboard
+
+The project includes a local Flask interface with:
+
+- Security overview and metrics
+- Critical / High / Medium / Low alert counts
+- Latest detections
+- Alert filtering by severity
+- Event search by IP, user or action
+- Detection-engine status indicator
+- Source activity overview
 
 ## 🏗️ Architecture
 
@@ -52,11 +65,12 @@ The lab focuses on reproducible detection logic rather than offensive exploitati
                     │  AUTH-001..003   │
                     └────────┬─────────┘
                              │
-                             ▼
-                    ┌──────────────────┐
-                    │ Alert / Triage   │
-                    │ severity + context│
-                    └──────────────────┘
+                  ┌──────────┴──────────┐
+                  ▼                     ▼
+         ┌─────────────────┐   ┌─────────────────┐
+         │ CLI report      │   │ Flask dashboard │
+         │ terminal output │   │ alerts / events│
+         └─────────────────┘   └─────────────────┘
 ```
 
 ## 📂 Project structure
@@ -64,10 +78,19 @@ The lab focuses on reproducible detection logic rather than offensive exploitati
 ```text
 mini-soc-lab/
 ├── README.md
+├── app.py
 ├── detector.py
 ├── requirements.txt
 ├── data/
 │   └── auth.log
+├── templates/
+│   ├── base.html
+│   ├── dashboard.html
+│   ├── alerts.html
+│   └── events.html
+├── static/
+│   └── css/
+│       └── style.css
 ├── tests/
 │   └── test_detector.py
 └── docs/
@@ -76,7 +99,7 @@ mini-soc-lab/
     └── investigation.md
 ```
 
-## ▶️ Run the lab
+## ▶️ Run the detector
 
 Requires Python 3.10+.
 
@@ -84,17 +107,27 @@ Requires Python 3.10+.
 python3 detector.py data/auth.log
 ```
 
-Example:
+## 🖥️ Run the dashboard
+
+Install the single web dependency:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+Start the local server:
+
+```bash
+python3 app.py
+```
+
+Then open:
 
 ```text
-=== Mini SOC Lab ===
-Events analyzed : 10
-Alerts generated : 4
-
-[CRITICAL] AUTH-002 192.0.2.50 -> admin | successful login after 6 recent failures
-[HIGH] AUTH-001 192.0.2.50 -> admin | 5 failed authentication attempts within 5 minutes
-[HIGH] AUTH-003 192.0.2.50 -> admin | administrative account targeted
+http://127.0.0.1:5000
 ```
+
+The dashboard reads the synthetic `data/auth.log` file and runs the same detection engine used by the CLI.
 
 ## 🧪 Run tests
 
@@ -122,7 +155,6 @@ The repository contains synthetic lab telemetry only. Addresses in the sample da
 - Sigma-compatible detection rules
 - Splunk SPL examples
 - IOC enrichment
-- Detection dashboard
 - Configurable thresholds
 - MITRE ATT&CK mapping
 - CI test workflow
