@@ -48,6 +48,7 @@ def snapshot(advance: bool = True):
         simulated_now = SIM.now
 
     severity = Counter(alert.severity for alert in alerts)
+    rules = Counter(alert.rule for alert in alerts)
     actions = Counter(event.action for event in events)
     source_counts = Counter(event.source for event in events)
     user_counts = Counter(event.user for event in events)
@@ -76,6 +77,7 @@ def snapshot(advance: bool = True):
         "unique_sources": len(source_counts),
         "top_sources": source_counts.most_common(6),
         "top_users": user_counts.most_common(6),
+        "rule_counts": dict(rules),
         "timeline": buckets,
         "alerts": [serialize_alert(alert) for alert in sorted(alerts, key=lambda item: item.timestamp, reverse=True)[:12]],
         "events": [serialize_event(event) for event in sorted(events, key=lambda item: item.timestamp, reverse=True)[:18]],
