@@ -1,2 +1,1 @@
-# No third-party dependencies.
-# Python standard library only.
+Flask>=3.0,<4.0
