@@ -2,24 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Mini SOC Lab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0f14">
+  <title>Mini SOC · Security Operations Center</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand"><span class="brand-mark">M</span><div><strong>Mini SOC</strong><small>Lab Dashboard</small></div></div>
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div><strong>MINI SOC</strong><small>Security Operations</small></div>
+      </div>
+      <div class="workspace">LAB / AUTHENTICATION</div>
       <nav>
-        <a href="/" class="nav-item">◈ Dashboard</a>
-        <a href="/alerts" class="nav-item">⚠ Alerts</a>
-        <a href="/events" class="nav-item">☷ Events</a>
+        <a href="/" class="nav-item">▦ <span>Overview</span></a>
+        <a href="/alerts" class="nav-item">◉ <span>Alerts</span></a>
+        <a href="/events" class="nav-item">≡ <span>Events</span></a>
       </nav>
-      <div class="status-card"><span class="dot"></span><div><small>Detection engine</small><b>ONLINE</b></div></div>
+      <div class="sidebar-footer">
+        <div class="engine"><span class="pulse"></span><div><small>Detection engine</small><b>ONLINE</b></div></div>
+        <div class="sim-label">SYNTHETIC TELEMETRY</div>
+      </div>
     </aside>
-    <main class="main">
-      {% block content %}{% endblock %}
-    </main>
+    <main class="main">{% block content %}{% endblock %}</main>
   </div>
+  {% if request.endpoint == 'dashboard' %}
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% endif %}
 </body>
 </html>
