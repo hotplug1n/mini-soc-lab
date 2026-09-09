@@ -1,26 +1,47 @@
 {% extends 'base.html' %}
 {% block content %}
-<header class="topbar"><div><p class="eyebrow">Security Operations Center</p><h1>Dashboard</h1><p class="muted">Monitoring synthetic authentication telemetry from <code>{{ log_name }}</code>.</p></div><form class="search" method="get"><input name="q" value="{{ query }}" placeholder="Search IP, user, rule..."><button>Search</button></form></header>
-<section class="metrics">
-  <div class="metric"><span>Total events</span><strong>{{ total_events }}</strong><small>parsed successfully</small></div>
-  <div class="metric"><span>Alerts</span><strong>{{ alerts|length }}</strong><small>detections generated</small></div>
-  <div class="metric danger"><span>Critical</span><strong>{{ severity_counts['CRITICAL'] }}</strong><small>requires investigation</small></div>
-  <div class="metric warning"><span>Failed auth</span><strong>{{ failures }}</strong><small>authentication failures</small></div>
-</section>
-<section class="grid-2">
-  <div class="panel"><div class="panel-head"><h2>Severity overview</h2><span>Live from log</span></div>
-    <div class="bars">
-      {% for level in ['CRITICAL','HIGH','MEDIUM','LOW'] %}
-      <div class="bar-row"><div><b>{{ level }}</b><span>{{ severity_counts[level] }}</span></div><div class="bar-track"><i class="bar {{ level|lower }}" style="width: {{ (severity_counts[level] / (alerts|length or 1) * 100)|round }}%"></i></div></div>
-      {% endfor %}
+<div id="dashboard-app">
+  <header class="topbar">
+    <div>
+      <div class="eyebrow"><span class="live-dot"></span> SOC / Authentication Monitoring</div>
+      <h1>Security Overview</h1>
+      <p class="muted">Synthetic telemetry stream · simulated clock <span id="sim-clock" class="mono">--:--:--</span></p>
     </div>
-  </div>
-  <div class="panel"><div class="panel-head"><h2>Top sources</h2><a href="/events">View events →</a></div>
-    {% for source, count in top_sources %}<div class="rank"><code>{{ source }}</code><span>{{ count }} events</span></div>{% else %}<p class="muted">No telemetry.</p>{% endfor %}
-  </div>
-</section>
-<section class="panel"><div class="panel-head"><h2>Latest alerts</h2><a href="/alerts">View all →</a></div>
-<table><thead><tr><th>Severity</th><th>Rule</th><th>Source</th><th>User</th><th>Message</th><th>Time</th></tr></thead><tbody>
-{% for alert in recent %}<tr><td><span class="severity {{ alert.severity|lower }}">{{ alert.severity }}</span></td><td><b>{{ alert.rule }}</b></td><td><code>{{ alert.source }}</code></td><td>{{ alert.user }}</td><td>{{ alert.message }}</td><td class="muted">{{ alert.timestamp.strftime('%H:%M:%S') }}</td></tr>{% else %}<tr><td colspan="6" class="empty">No alerts match your search.</td></tr>{% endfor %}
-</tbody></table></section>
+    <div class="top-actions"><span class="stream-status"><span class="pulse"></span> STREAMING</span><button class="ghost-btn" data-action="reset">Reset simulation</button></div>
+  </header>
+
+  <section class="metrics">
+    <div class="metric-card"><span>Total events</span><strong id="total-events">—</strong><small>last 600 retained</small></div>
+    <div class="metric-card"><span>Open detections</span><strong id="alert-count">—</strong><small>correlated alerts</small></div>
+    <div class="metric-card critical-card"><span>Critical</span><strong id="critical-count">—</strong><small>priority investigations</small></div>
+    <div class="metric-card failure-card"><span>Auth failures</span><strong id="failure-count">—</strong><small>observed in stream</small></div>
+  </section>
+
+  <section class="grid-main">
+    <div class="panel timeline-panel">
+      <div class="panel-head"><div><h2>Event activity</h2><p class="muted">Rolling 12-minute view</p></div><span class="panel-tag">AUTO REFRESH 3.5s</span></div>
+      <div id="timeline" class="timeline"></div>
+    </div>
+    <div class="panel compact-panel">
+      <div class="panel-head"><div><h2>Detection rules</h2><p class="muted">Current matches</p></div></div>
+      <div id="rule-list"></div>
+    </div>
+  </section>
+
+  <section class="grid-secondary">
+    <div class="panel">
+      <div class="panel-head"><div><h2>Latest alerts</h2><p class="muted">Most recent correlated detections</p></div><a href="/alerts">View all →</a></div>
+      <div class="table-wrap"><table><thead><tr><th>Severity</th><th>Rule</th><th>Source</th><th>Account</th><th>Detection</th><th>Time</th></tr></thead><tbody id="alert-rows"><tr><td colspan="6" class="empty">Loading telemetry…</td></tr></tbody></table></div>
+    </div>
+    <div class="panel compact-panel">
+      <div class="panel-head"><div><h2>Top sources</h2><p class="muted">By event volume</p></div><span class="panel-tag">UNIQUE <b id="source-count">—</b></span></div>
+      <div id="source-list"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><h2>Recent authentication events</h2><p class="muted">Normalized events from the simulator</p></div><a href="/events">Open event stream →</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Timestamp</th><th>Source</th><th>User</th><th>Action</th></tr></thead><tbody id="event-rows"><tr><td colspan="4" class="empty">Loading telemetry…</td></tr></tbody></table></div>
+  </section>
+</div>
 {% endblock %}
