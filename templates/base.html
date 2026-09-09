@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mini SOC Lab</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">M</span><div><strong>Mini SOC</strong><small>Lab Dashboard</small></div></div>
+      <nav>
+        <a href="/" class="nav-item">◈ Dashboard</a>
+        <a href="/alerts" class="nav-item">⚠ Alerts</a>
+        <a href="/events" class="nav-item">☷ Events</a>
+      </nav>
+      <div class="status-card"><span class="dot"></span><div><small>Detection engine</small><b>ONLINE</b></div></div>
+    </aside>
+    <main class="main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>
